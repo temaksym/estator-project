@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property List</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <a class="logo" href="\">
+            <!-- <div class="logo-img">
+                <img src="{% static 'images/logo.png' %}" alt="Estator">
+            </div> -->
+            <span>Property List</span>
+        </a>
+        {% if user.is_authenticated %}
+            <div class="when-logged">
+                <a href="\logout" id="logout-button">Logout</a>
+                <a href="\profile" id="profile-button">Profile</a>
+            </div>
+        {% else %}
+            <a href="\login" id="login-button">Login</a>
+        {% endif %}
+    </header>
+
+    <!-- Listing of real-estate -->
+    <main>
+        <div class="prop-container">
+            {% for property in properties %}
+                <div class="prop" data-id="{{ property.id }}">
+                    <div class="slider">
+                        <img src="{% static 'photos/' %}{{ property.images }}" alt="{{ property.title }}">
+                    </div>
+                    
+                    
+                    <p>{{ property.title }}</p>
+                    <p>{{ property.price }} $</p>
+                    <p>Адреса: {{ property.address }}</p>
+                    <p>{{ property.area }} м²</p>
+                    <p>Кімнати: {{ property.rooms }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Pop up window with estate info -->
+    <div id="propertyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-left">
+                <div id="modal-images"></div>
+            </div>
+            <div class="modal-right">
+                <h2 id="modal-title"></h2>
+                <p id="modal-description"></p>
+                <p id="modal-price"></p>
+                <p id="modal-address"></p>
+                <p id="modal-area"></p>
+                <p id="modal-rooms"></p>
+                <p id="modal-floor"></p>
+                <p id="modal-type"></p>
+                <p id="modal-publication-date"></p>
+                <button class="apply-button">Apply for estate!</button>
+            </div><span class="close">&times;</span>
+            
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            var modal = $('#propertyModal');
+            var span = $('.close');
+
+            $('.prop').on('click', function() {
+                var propertyId = $(this).data('id');
+                $.ajax({
+                    url: propertyId + '/',
+                    method: 'GET',
+                    success: function(data) {
+                        $('#modal-title').text(data.title);
+                        $('#modal-description').text(data.description);
+                        $('#modal-price').text('Ціна: ' + data.price + ' $');
+                        $('#modal-address').text('Адреса: ' + data.address);
+                        $('#modal-area').text('Площа: ' + data.area + ' м²');
+                        $('#modal-rooms').text('К-сть кімнат: ' + data.rooms);
+                        $('#modal-floor').text('Поверх: ' + data.floor);
+                        $('#modal-type').text('Тпи будови: ' + data.type);
+                        $('#modal-publication-date').text('Дата публікації: ' + data.publication_date);
+                        
+                        var imagesHtml = '';
+                        for (var i = 0; i < data.images.length; i++) {
+                            imagesHtml += "<img src=\"{% static 'photos/' %}" + data.images[i] + "\" alt=\"" + data.title + "\" style=\"width:100%;\">";
+                        }
+                        $('#modal-images').html(imagesHtml);
+
+                        modal.data('property-id', propertyId);
+                        modal.show();
+                    }
+                });
+            });
+
+            span.on('click', function() {
+                modal.hide();
+            });
+
+            $(window).on('click', function(event) {
+                if ($(event.target).is(modal)) {
+                    modal.hide();
+                }
+            });
+        });
+
+        // Apply button click event -------------------------------
+
+        $(document).on('click', '.apply-button', function() {
+            var propertyId = $('#propertyModal').data('property-id');
+            $.ajax({
+            url: '/create_application/',
+            method: 'POST',
+            data: {
+                applicant_id: '{{ user.id }}',
+                property_id: propertyId,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+
+                if (Notification.permission === "granted") {
+                    new Notification("Application Successful", {
+                        body: "You have successfully applied for this property.",
+                        icon: "{% static 'images/success-icon.png' %}"
+                    });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification("Application Successful", {
+                                body: "You have successfully applied for this property.",
+                                icon: "{% static 'images/success-icon.png' %}"
+                            });
+                        }
+                    });
+                }
+            }
+            });
+        });
+    </script>
+    <!-- ----------------------------- -->
+    <footer>
+        <p>&copy; 2023 Real Estate Company</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property List</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <a class="logo" href="\">Property List</a>
+        {% if user.is_authenticated %}
+            <div class="when-logged">
+                <a href="\logout" id="logout-button">Logout</a>
+                <a href="\profile" id="profile-button">Profile</a>
+            </div>
+        {% else %}
+            <a href="\login" id="login-button">Login</a>
+        {% endif %}
+    </header>
+
+    <main id="profile-main">
+        <section class="request-info">
+            <h1>Запити на покупку квартири:</h1>
+            {% for application in applications %}
+
+            <div class="application" data-id="{{ application.id }}">
+                <div class="title-delete">
+                    <p class="app-title">{{ application.property.title }}</p>
+                    <span class="delete">&times;</span>
+                </div>
+                <p class="app-price">Ціна: {{ application.property.price }} $</p>
+                <p class="app-date">Дата: {{ application.application_date }}</p>
+                <p class="app-status">Статус: {{ application.status }}</p>
+                <p class="app-message">Повідомлення: {{ application.message }}</p>
+                <p class="applicant">Клієнт: {{ application.applicant.username }}
+            </div>
+
+            {% endfor %}
+        </section>
+        <section class="user-info">
+            <h2>User Info</h2>
+            <p>Username: {{ user.username }}</p>
+            <p>Email: {{ user.email }}</p>
+        </section>
+    </main>
+    
+    <script>
+        $(document).ready(function() {
+            // Handle click event on the delete span
+            $('.delete').on('click', function() {
+                var applicationId = $(this).closest('.application').data('id');
+                $.ajax({
+                    url: '/delete_application/' + applicationId + '/',
+                    method: 'POST',
+                    data: {csrfmiddlewaretoken: '{{ csrf_token }}'},
+                });
+                $(this).closest('.application').remove();
+            });
+        });
+    </script>
+
+    <footer>
+        <p>&copy; 2023 Real Estate Company</p>
+    </footer>
+</body>
+</html>
